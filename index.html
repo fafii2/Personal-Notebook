@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar Task Manager - Import & Sync</title>
+  <meta name="description" content="Import calendars, auto-convert events to tasks, and sync with live iCal feeds">
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <div id="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <h1 class="app-title">
+          <span class="text-gradient">📅 Calendar Task Manager</span>
+        </h1>
+        <div class="header-actions">
+          <button id="syncBtn" class="btn btn-secondary" title="Refresh calendars">
+            <span class="sync-icon">🔄</span> Sync
+          </button>
+          <button id="helpBtn" class="btn btn-secondary" title="How to use">
+            ❓ Help
+          </button>
+          <button id="importBtn" class="btn btn-primary">
+            📥 Import Calendar
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Left Panel: Calendar View -->
+      <section class="calendar-panel glass-card">
+        <div class="panel-header">
+          <button id="prevMonth" class="btn btn-icon">◀</button>
+          <h2 id="currentMonth" class="month-title">Month Year</h2>
+          <button id="nextMonth" class="btn btn-icon">▶</button>
+        </div>
+
+        <div id="calendarGrid" class="calendar-grid">
+          <!-- Calendar will be rendered here -->
+        </div>
+
+        <div class="calendar-legend">
+          <div class="legend-item">
+            <span class="dot event-dot"></span>
+            <span>Events</span>
+          </div>
+          <div class="legend-item">
+            <span class="dot task-dot"></span>
+            <span>Tasks</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Panel: Tasks View -->
+      <section class="tasks-panel glass-card">
+        <div class="panel-header">
+          <h2>📝 Tasks</h2>
+          <button id="addTaskBtn" class="btn btn-icon" title="Add manual task">
+            ➕
+          </button>
+        </div>
+
+        <div class="tasks-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="active">Active</button>
+          <button class="filter-btn" data-filter="upcoming">Due 📅</button>
+          <button class="filter-btn" data-filter="overdue">Overdue ⚠️</button>
+          <button class="filter-btn" data-filter="completed">Completed</button>
+          <button class="filter-btn" data-filter="auto">Auto</button>
+        </div>
+        <button id="deleteAllCompletedBtn" class="btn btn-sm btn-danger" style="display: none; margin-top: 10px;">
+          🗑️ Delete All Completed
+        </button>
+
+        <div id="tasksList" class="tasks-list">
+          <!-- Tasks will be rendered here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Sources Panel (shows synced calendars) -->
+    <aside class="sources-panel glass-card collapsed" id="sourcesPanel">
+      <div class="panel-header">
+        <h3>📚 Calendar Sources</h3>
+        <button id="toggleSources" class="btn btn-icon">▼</button>
+      </div>
+      <div class="sources-list" id="sourcesList">
+        <!-- Calendar sources will be listed here -->
+      </div>
+    </aside>
+  </div>
+
+  <!-- Import Modal -->
+  <div id="importModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Import Calendar</h3>
+        <button class="btn btn-icon close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-description">
+          Import your calendar to automatically convert events into organized tasks.
+          Perfect for school calendars, work schedules, and assignment tracking!
+        </p>
+
+        <!-- Google Calendar iCal URL -->
+        <div class="import-option">
+          <h4>🔗 Google Calendar (Recommended)</h4>
+          <p class="option-description">
+            Get your secret iCal URL from Google Calendar settings → Integrate calendar
+          </p>
+          <input type="url" id="googleIcalUrl" class="input"
+            placeholder="https://calendar.google.com/calendar/ical/..." />
+          <button id="importGoogleBtn" class="btn btn-primary full-width">
+            Add Google Calendar
+          </button>
+        </div>
+
+        <div class="divider">OR</div>
+
+        <!-- Other iCal URL -->
+        <div class="import-option">
+          <h4>🌐 Other iCal URL</h4>
+          <input type="url" id="icalUrl" class="input" placeholder="https://example.com/calendar.ics" />
+          <button id="importUrlBtn" class="btn btn-secondary full-width">
+            Import from URL
+          </button>
+        </div>
+
+        <div class="divider">OR</div>
+
+        <!-- File Upload -->
+        <div class="import-option">
+          <h4>📁 Upload .ics File</h4>
+          <input type="file" id="icsFile" class="input file-input" accept=".ics,.ical" />
+          <button id="importFileBtn" class="btn btn-secondary full-width">
+            Upload File
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Task Modal -->
+  <div id="taskModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Task</h3>
+        <button class="btn btn-icon close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="taskTitle" class="input" placeholder="Task title..." autocomplete="off" />
+        <input type="datetime-local" id="taskDueDate" class="input" />
+        <textarea id="taskDescription" class="input" placeholder="Description (optional)..." rows="3"></textarea>
+        <div class="modal-actions">
+          <button class="btn btn-secondary close-modal">Cancel</button>
+          <button id="saveTaskBtn" class="btn btn-primary">Save Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help / Onboarding Modal -->
+  <div id="helpModal" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">👋 Welcome to Calendar Task Manager</h3>
+        <button class="btn btn-icon close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="help-section">
+          <h4>📅 1. Import Your Calendar</h4>
+          <p>
+            Click <strong>Import Calendar</strong> to connect your Google Calendar, school schedule, or work calendar.
+            We recommend using the <strong>Google Calendar Secret Address</strong> for live syncing.
+          </p>
+        </div>
+
+        <div class="help-section">
+          <h4>📝 2. Auto-Task Creation</h4>
+          <p>
+            Events with keywords like <em>"Exam"</em>, <em>"Assignment"</em>, <em>"Due"</em>, or <em>"Project"</em>
+            are automatically converted into <strong>Tasks</strong> with due dates!
+          </p>
+        </div>
+
+        <div class="help-section">
+          <h4>🔄 3. Stay Synced</h4>
+          <p>
+            Click the <strong>Sync</strong> button anytime to fetch the latest changes from your connected calendars.
+          </p>
+        </div>
+
+        <div class="help-tip">
+          <strong>💡 Tip:</strong> You can also upload <code>.ics</code> files directly if you don't have a URL.
+        </div>
+
+        <div class="divider">🔥 Real-time Database</div>
+        <div class="help-section">
+          <p style="margin-bottom: var(--spacing-sm);">
+            <strong>Status:</strong> <span id="cloudStatus"
+              style="font-weight: bold; color: var(--text-muted);">Connecting...</span>
+          </p>
+          <p style="font-size: var(--font-size-sm); color: var(--text-muted);">
+            Your data is automatically synced to <strong>Firebase</strong> in real-time.
+            No configuration needed!
+          </p>
+        </div>
+
+        <div class="divider">Data Management (Manual)</div>
+        <div class="modal-actions" style="margin-bottom: var(--spacing-lg);">
+          <button id="backupBtn" class="btn btn-secondary">💾 Backup Data</button>
+          <button id="restoreBtn" class="btn btn-secondary">📂 Restore Data</button>
+          <input type="file" id="restoreFile" accept=".json" style="display: none;">
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary full-width close-modal">Got it!</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/main.js"></script>
+</body>
+
+</html>
